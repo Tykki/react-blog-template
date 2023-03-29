@@ -7,7 +7,8 @@ import Err404 from './Err404'
 import useUser from '../hooks/useUser'
 
 const Article = () => {
-    const [articleInfo, setArticleInfo] = useState({upvotes: 0, comments: []})
+    const [articleInfo, setArticleInfo] = useState({upvotes: 0, comments: [], canUpvote: false})
+    const {canUpvote} = articleInfo
     const {id} = useParams()
     const {user, isLoading} = useUser()
 
@@ -15,24 +16,23 @@ const Article = () => {
         const loadInfo = async () => {
             const token = user && await user.getIdToken()
             const header = token ? {authtoken: token} : {}
-            await fetch(`http://localhost:8000/api/articles/${id}`, {
-                headers: {
-                    // "Content-Type": "application/json",
-                    // "access-control-allow-origin": "*",
-                    // 'Access-Control-Allow-Headers': 'Content-Type, application/json',
-                    // authtoken: token
-                }
+            await fetch(`/api/articles/${id}`, {
+                headers: header,
             }).then(res => res.json())
             .then(data => setArticleInfo(data))
             
         }
-        loadInfo()
-    }, [])
+        !isLoading ? loadInfo() : false
+    }, [isLoading, user])
 
     const article = articles.find(article => article.name === id)
+    
     const upVote = async () => {
-        await fetch(`http://localhost:8000/api/articles/${id}/upvote`, {
+        const token = user && await user.getIdToken()
+        const header = token ? {authtoken: token} : {}
+        await fetch(`/api/articles/${id}/upvote`, {
             method: 'PUT',
+            headers: header,
         }).then(res => res.json()).then(data => setArticleInfo(data))
     }
     if (!article) {
@@ -43,7 +43,7 @@ const Article = () => {
             <h1>{article.title}</h1>
             <div className="upvotes-section">
             {user
-                ? <button onClick={upVote}>Upvote</button>
+                ? <button onClick={upVote}> {canUpvote ? 'Upvote' : 'Already Upvoted'}</button>
                 : <button>Log in to upvote</button>
             }
                 <p>This article has {articleInfo.upvotes} upvote(s)</p>
